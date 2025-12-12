@@ -1,0 +1,280 @@
+{
+  "name": "ElevenLabs Agents Gmail and Calendar Integration",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "options": {
+          "systemMessage": "You are a helpful AI assistant with access to Gmail and Google Calendar. You can help users manage their emails and calendar events. Be concise and direct in your response and do what you are asked to do."
+        }
+      },
+      "id": "d3fd6236-3851-46e0-9d42-919d4b075edf",
+      "name": "AI Agent 1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        976,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "0a695f20-412e-4879-8b33-5a908d556a66",
+      "name": "OpenAI Chat Model 1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        832,
+        816
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "9GN61VbZpqP6SWpY",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "9a53e54a-786d-487e-ad19-59f9215a651f",
+      "name": "OpenAI Chat Model 2",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        608,
+        928
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "nBVOsJmL07XWBkHk",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionKey": "={{ $json.body.sessionId || $json.body.conversationId || 'default-session' }}",
+        "contextWindowLength": 10
+      },
+      "id": "ec3fa3fa-fc89-4877-8960-16cf209ee0ba",
+      "name": "Shared Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        960,
+        816
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $fromAI('to', 'Email recipient address', 'string') }}",
+        "subject": "={{ $fromAI('subject', 'Email subject line', 'string') }}",
+        "message": "={{ $fromAI('message_html', 'Email message content', 'string') }}",
+        "options": {}
+      },
+      "id": "f97a46b1-b4a4-46cd-a0ea-3d8cb3ed4889",
+      "name": "Gmail Tool",
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        1088,
+        816
+      ],
+      "webhookId": "07fed108-9e51-4f27-a506-536415a31b41",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "CLK8949gQsuOek5y",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "imasleepstill@gmail.com",
+          "mode": "list",
+          "cachedResultName": "imasleepstill@gmail.com"
+        },
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', `Start date/time for calendar events`, 'string') }}",
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Before', `End date/time for calendar events`, 'string') }}",
+        "options": {}
+      },
+      "id": "41bb6589-77a6-440c-965e-dcb076eab98c",
+      "name": "Google Calendar Tool",
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        1216,
+        816
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "CDrsnzIR3Wtow6te",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTimeTool",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        816
+      ],
+      "id": "9e3a60fa-cb58-4324-901b-ab036af53ed7",
+      "name": "Date & Time"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "0550750e-f08b-4707-8c9e-b44b998e5d57",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        432,
+        480
+      ],
+      "id": "e21efc14-f905-4511-bba6-e269911c4aab",
+      "name": "Webhook",
+      "webhookId": "0550750e-f08b-4707-8c9e-b44b998e5d57"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1856,
+        592
+      ],
+      "id": "6bd5ef57-d83a-4f04-86a5-4ab50d21eb48",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        128,
+        672
+      ],
+      "id": "25015679-460a-4121-bffb-4f42aa9dd378",
+      "name": "When chat message received",
+      "webhookId": "293f6573-79e8-4ac2-94f0-b1a93f6bd206"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model 1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent 1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shared Memory": {
+      "ai_memory": [
+        []
+      ]
+    },
+    "Gmail Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent 1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent 1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent 1": {
+      "main": [
+        []
+      ]
+    },
+    "Date & Time": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent 1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3885268a-78ae-4fbc-8f2d-92a1a549f49c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d4f304b304b00f99a87ed33c0405b3e990aeb2bae316b52f3e69fb62c9eea686"
+  },
+  "id": "ddryjA35xzzXCVbL",
+  "tags": []
+}
