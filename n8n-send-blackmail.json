@@ -1,0 +1,263 @@
+{
+  "name": "Voice-Triggered First Meeting Email Sender with Calendar Integration",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "elevenlabs-voice-agent",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "9bd5f1f3-1ba9-44b5-ac35-1e6943e7c338",
+      "name": "ElevenLabs Voice Agent Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        704,
+        224
+      ],
+      "webhookId": "74c1dc50-3cb6-4fcb-a48b-dad8b5e781f1",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "emailContent",
+              "value": "={{ $json.body.emailContent }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "0480a8c9-c52b-4371-b30f-426538231fce",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        928,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "=imasleepstill@gmail.com",
+          "mode": "id"
+        },
+        "returnAll": true,
+        "timeMin": "={{ $today.startOf('day').toISO() }}",
+        "timeMax": "={{ $today.endOf('day').toISO() }}",
+        "options": {
+          "orderBy": "startTime",
+          "recurringEventHandling": "expand"
+        }
+      },
+      "id": "d5091621-a9cb-486c-b122-d2fa59244af8",
+      "name": "Get Today's Events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        1152,
+        224
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "VhqZevPhfPWHLrYR",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const events = $input.all();\n\nif (events.length === 0) {\n  return [{ json: { hasFirstMeeting: false } }];\n}\n\nconst sortedEvents = events.sort((a, b) => {\n  const startA = new Date(a.json.start?.dateTime || a.json.start?.date);\n  const startB = new Date(b.json.start?.dateTime || b.json.start?.date);\n  return startA - startB;\n});\n\nconst firstMeeting = sortedEvents[0].json;\nconst attendees = firstMeeting.attendees || [];\nconst attendeeEmails = attendees.filter(a => a.email).map(a => a.email).join(', ');\n\nreturn [{\n  json: {\n    hasFirstMeeting: true,\n    meetingTitle: firstMeeting.summary || 'No Title',\n    meetingStart: firstMeeting.start?.dateTime || firstMeeting.start?.date,\n    meetingEnd: firstMeeting.end?.dateTime || firstMeeting.end?.date,\n    attendeeEmails: attendeeEmails,\n    attendees: attendees\n  }\n}];"
+      },
+      "id": "2e459ec3-304d-4570-9b1c-0180d279581d",
+      "name": "Find First Meeting",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $json.hasFirstMeeting }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0b843698-682c-4d8b-a538-17dbc2f71ab8",
+      "name": "Check If Meeting Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1600,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "emailTo",
+              "value": "={{ $json.attendeeEmails }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "emailSubject",
+              "value": "={{ 'Meeting: ' + $json.meetingTitle }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "emailBody",
+              "value": "={{ $('Workflow Configuration').first().json.emailContent }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "90a001a0-2d93-49a0-baf8-252e9331d522",
+      "name": "Prepare Email Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1824,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.emailTo }}",
+        "subject": "={{ $json.emailSubject }}",
+        "emailType": "text",
+        "message": "={{ $json.emailBody }}",
+        "options": {}
+      },
+      "id": "868619b7-06be-482f-9134-21866c3532ea",
+      "name": "Send Email to Participants",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2048,
+        224
+      ],
+      "webhookId": "16fc937b-3052-4da6-be0e-508c4f280dfd",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "RbZuDUoOHrDBX5qe",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "ElevenLabs Voice Agent Trigger": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "Get Today's Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Today's Events": {
+      "main": [
+        [
+          {
+            "node": "Find First Meeting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find First Meeting": {
+      "main": [
+        [
+          {
+            "node": "Check If Meeting Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Meeting Found": {
+      "main": [
+        [
+          {
+            "node": "Prepare Email Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Email Data": {
+      "main": [
+        [
+          {
+            "node": "Send Email to Participants",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "68db5e7e-5ec7-4447-a882-2a97dce19c16",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7978dc0608cca6afe988d8764f90ff2baa0b37f0ef531f758675e7e73c2fa460"
+  },
+  "id": "zcRWeFFEgV6jwC3N",
+  "tags": []
+}
